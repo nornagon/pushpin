@@ -1,0 +1,35 @@
+.MindMap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.MindMapEdges {
+  position: absolute;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+.MindMapEdges > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.MindMapNodes {
+  position: absolute;
+}
+
+.MindMapNode {
+  position: absolute;
+
+  color: white;
+  cursor: default;
+  background-color: #333840;
+  font-size: 16px;
+  border-radius: 3px;
+  padding: 4px 8px;
+  line-height: 23px;
+}
