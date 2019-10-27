@@ -22,8 +22,17 @@
   position: absolute;
 }
 
-.MindMapNode {
+.MindMapNode--wrapper {
   position: absolute;
+  width: 0;
+  height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.MindMapNode {
+  position: relative;
 
   color: white;
   cursor: default;
@@ -32,4 +41,37 @@
   border-radius: 3px;
   padding: 4px 8px;
   line-height: 23px;
+
+  white-space: pre;
+}
+
+.expanding-input {
+  display: inline-block;
+  position: relative;
+}
+.expanding-input div, .expanding-input input {
+  margin: 0; padding: 0; outline: 0; border: 0;
+  font: inherit;
+  line-height: inherit;
+  min-width: 8px;
+  text-rendering: inherit;
+  letter-spacing: inherit;
+  color: transparent;
+  white-space: pre;
+}
+.expanding-input div {
+  margin-right: 1px;
+}
+.expanding-input input {
+  background: transparent;
+  color: inherit;
+  letter-spacing: inherit;
+  vertical-align: initial;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.expanding-input input:first-line {
+  display: inline-block;
 }

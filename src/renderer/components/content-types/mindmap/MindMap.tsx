@@ -36,26 +36,43 @@ const Edges = ({ doc, protoEdge }: { doc: MindMapDoc, protoEdge?: { from: string
   </div>
 }
 
-const Node = ({ node, onStartDragging }: { node: MindMapNode, onStartDragging: (e: React.MouseEvent) => void }) => {
-  return <div className="MindMapNode" onMouseDown={onStartDragging} style={{ left: node.x, top: node.y }}>
-    {node.text}
+const ExpandingInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => {
+  const input = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (props.autoFocus && input.current) {
+      input.current.focus()
+      input.current.select()
+    }
+  }, [props.autoFocus])
+  return <div className="expanding-input">
+    <div>
+      <span>{props.value}</span>
+      <br />
+    </div>
+    <input {...props} ref={input} />
   </div>
 }
 
-const Nodes = ({ doc, onStartDraggingNode }: { doc: MindMapDoc, onStartDraggingNode: (e: React.MouseEvent, id: string) => void }) => {
-  return <div className="MindMapNodes">
-    {Object.keys(doc.nodes).map(nodeId => {
-      const node = doc.nodes[nodeId]
-      return <Node
-        key={nodeId}
-        node={node}
-        onStartDragging={(e) => onStartDraggingNode(e, nodeId)}
-      />
-    })}
+
+const Node = ({ node, id, onStartDragging, onChange, onFinishEditing, isEditing }: { id: string, isEditing: boolean, node: MindMapNode, onStartDragging: (e: React.MouseEvent) => void, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, onFinishEditing: () => void }) => {
+  return <div className="MindMapNode--wrapper">
+    <div className="MindMapNode" onMouseDown={onStartDragging} style={{ left: node.x, top: node.y }} data-nodeid={id}>
+      {isEditing
+        ? <ExpandingInput
+          value={node.text}
+          autoFocus={true}
+          onChange={onChange}
+          onBlur={onFinishEditing}
+          onKeyDown={(e) => { if (e.which === 13 || e.which === 27) onFinishEditing() }} />
+        : node.text}
+    </div>
   </div>
 }
 
-const useDrag = (dropped: (target: { x: number, y: number }) => void) => {
+const Nodes = ({ doc, onStartDraggingNode, editingNodeId }: { doc: MindMapDoc, onStartDraggingNode: (e: React.MouseEvent, id: string) => void, editingNodeId: string }) => {
+}
+
+const useDrag = (dropped: (e: MouseEvent) => void) => {
   const [dragging, setDragging] = useState(false)
   const [current, setCurrent] = useState<{ x: number, y: number } | null>(null)
   const start = (x: number, y: number) => {
@@ -69,7 +86,7 @@ const useDrag = (dropped: (target: { x: number, y: number }) => void) => {
         setCurrent(point)
       }
       const up = (e: MouseEvent) => {
-        dropped({ x: e.clientX, y: e.clientY })
+        dropped(e)
         cancel()
       }
       const cancel = () => {
@@ -100,16 +117,36 @@ const useClientBoundingRect = (ref: React.RefObject<HTMLElement>) => {
   return rect
 }
 
+function closest<T>(e: Element | null, f: (e: Element) => T): T | null {
+  if (e) {
+    const x = f(e)
+    if (x) return x
+    else return closest(e.parentElement, f)
+  }
+  return null
+}
+
 export const MindMap = (props: ContentProps) => {
   const [doc, changeDoc] = useDocument<MindMapDoc>(props.hypermergeUrl)
   const root = useRef<HTMLDivElement>(null)
   const { x: rootX, y: rootY } = useClientBoundingRect(root)
   const [dragSourceNodeId, setDragSourceNodeId] = useState<string | null>(null)
-  const createDrag = useDrag((target) => {
-    const newId = uuid.v4()
-    changeDoc(addNode(newId, { text: 'bar', x: target.x - rootX, y: target.y - rootY, color: 'red' }))
-    changeDoc(addEdge(dragSourceNodeId!, newId, { primary: true }))
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
+  const createDrag = useDrag((e: MouseEvent) => {
     setDragSourceNodeId(null)
+    const droppedId = closest(e.target as Element, e => e.getAttribute('data-nodeid'))
+    if (droppedId === dragSourceNodeId) {
+      setEditingNodeId(droppedId)
+    } else {
+      if (droppedId != null) {
+        // connect 2 nodes
+        changeDoc(addEdge(dragSourceNodeId!, droppedId, { primary: false }))
+      } else {
+        const newId = uuid.v4()
+        changeDoc(addNode(newId, { text: 'bar', x: e.clientX - rootX, y: e.clientY - rootY, color: 'red' }))
+        changeDoc(addEdge(dragSourceNodeId!, newId, { primary: true }))
+      }
+    }
   })
   if (!doc) return null
   const onDoubleClick = (e: React.MouseEvent) => {
@@ -118,9 +155,10 @@ export const MindMap = (props: ContentProps) => {
   }
   const onStartDraggingNode = (e: React.MouseEvent, nodeId: string) => {
     if (e.button !== 0) return
+    if (!(e.target as Element).getAttribute('data-nodeid')) return
     e.preventDefault()
     if (e.shiftKey) {
-      // move node
+      // TODO: move node
     } else {
       setDragSourceNodeId(nodeId)
       createDrag.start(e.clientX, e.clientY)
@@ -128,7 +166,20 @@ export const MindMap = (props: ContentProps) => {
   }
   return <div className="MindMap" onDoubleClick={onDoubleClick} ref={root}>
     <Edges doc={doc} protoEdge={dragSourceNodeId && createDrag.current ? { from: dragSourceNodeId, to: { x: createDrag.current.x - rootX, y: createDrag.current.y - rootY } } : undefined} />
-    <Nodes doc={doc} onStartDraggingNode={onStartDraggingNode} />
+    <div className="MindMapNodes">
+      {Object.keys(doc.nodes).map(nodeId => {
+        const node = doc.nodes[nodeId]
+        return <Node
+          key={nodeId}
+          id={nodeId}
+          node={node}
+          isEditing={nodeId === editingNodeId}
+          onChange={(e) => { changeDoc(doc => doc.nodes[nodeId].text = e.target.value) }}
+          onFinishEditing={() => { setEditingNodeId(null) }}
+          onStartDragging={(e) => onStartDraggingNode(e, nodeId)}
+        />
+      })}
+    </div>
   </div>
 }
 
