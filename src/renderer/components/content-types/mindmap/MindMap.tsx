@@ -3,7 +3,7 @@ import { ContentHandle, ContentProps } from "../../Content";
 import { useDocument } from "../../../Hooks";
 
 import './MindMap.css'
-import { MindMapDoc, idsFromEdge, MindMapNode, MindMapLink, addNode, addEdge } from ".";
+import { MindMapDoc, idsFromEdge, MindMapNode, MindMapLink, addNode, addEdge, removeNode } from ".";
 import uuid from "uuid";
 import { number } from "prop-types";
 
@@ -150,8 +150,11 @@ export const MindMap = (props: ContentProps) => {
   })
   if (!doc) return null
   const onDoubleClick = (e: React.MouseEvent) => {
+    if (e.target !== root.current) return
     const x = e.clientX - rootX, y = e.clientY - rootY
-    changeDoc(addNode(uuid.v4(), { x, y, text: 'foo', color: 'red' }))
+    const newId = uuid.v4()
+    changeDoc(addNode(newId, { x, y, text: '', color: 'red' }))
+    setEditingNodeId(newId)
   }
   const onStartDraggingNode = (e: React.MouseEvent, nodeId: string) => {
     if (e.button !== 0) return
@@ -175,7 +178,12 @@ export const MindMap = (props: ContentProps) => {
           node={node}
           isEditing={nodeId === editingNodeId}
           onChange={(e) => { changeDoc(doc => doc.nodes[nodeId].text = e.target.value) }}
-          onFinishEditing={() => { setEditingNodeId(null) }}
+          onFinishEditing={() => {
+            if (doc.nodes[nodeId].text.trim().length === 0) {
+              removeNode(nodeId)(doc)
+            }
+            setEditingNodeId(null)
+          }}
           onStartDragging={(e) => onStartDraggingNode(e, nodeId)}
         />
       })}
