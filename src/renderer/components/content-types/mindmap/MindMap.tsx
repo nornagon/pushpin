@@ -56,7 +56,7 @@ const ExpandingInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => {
 
 const Node = ({ node, id, onStartDragging, onChange, onFinishEditing, isEditing }: { id: string, isEditing: boolean, node: MindMapNode, onStartDragging: (e: React.MouseEvent) => void, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, onFinishEditing: () => void }) => {
   return <div className="MindMapNode--wrapper">
-    <div className="MindMapNode" onMouseDown={onStartDragging} style={{ left: node.x, top: node.y }} data-nodeid={id}>
+    <div className="MindMapNode" onMouseDown={onStartDragging} style={{ left: node.x, top: node.y, backgroundColor: node.color }} data-nodeid={id}>
       {isEditing
         ? <ExpandingInput
           value={node.text}
@@ -67,9 +67,6 @@ const Node = ({ node, id, onStartDragging, onChange, onFinishEditing, isEditing 
         : node.text}
     </div>
   </div>
-}
-
-const Nodes = ({ doc, onStartDraggingNode, editingNodeId }: { doc: MindMapDoc, onStartDraggingNode: (e: React.MouseEvent, id: string) => void, editingNodeId: string }) => {
 }
 
 const useDrag = (dropped: (e: MouseEvent) => void) => {
@@ -143,8 +140,9 @@ export const MindMap = (props: ContentProps) => {
         changeDoc(addEdge(dragSourceNodeId!, droppedId, { primary: false }))
       } else {
         const newId = uuid.v4()
-        changeDoc(addNode(newId, { text: 'bar', x: e.clientX - rootX, y: e.clientY - rootY, color: 'red' }))
+        changeDoc(addNode(newId, { text: '', x: e.clientX - rootX, y: e.clientY - rootY, color: 'red' }))
         changeDoc(addEdge(dragSourceNodeId!, newId, { primary: true }))
+        setEditingNodeId(newId)
       }
     }
   })
