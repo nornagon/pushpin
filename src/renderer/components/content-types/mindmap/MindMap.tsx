@@ -5,7 +5,6 @@ import { useDocument } from "../../../Hooks";
 import './MindMap.css'
 import { MindMapDoc, idsFromEdge, MindMapNode, MindMapLink, addNode, addEdge, removeNode } from ".";
 import uuid from "uuid";
-import { number } from "prop-types";
 
 const Edge = ({ a, b, link }: { a: MindMapNode, b: MindMapNode, link: MindMapLink }) => {
   const d = `M${a.x} ${a.y} L${b.x} ${b.y}`
@@ -178,7 +177,7 @@ export const MindMap = (props: ContentProps) => {
           onChange={(e) => { changeDoc(doc => doc.nodes[nodeId].text = e.target.value) }}
           onFinishEditing={() => {
             if (doc.nodes[nodeId].text.trim().length === 0) {
-              removeNode(nodeId)(doc)
+              changeDoc(removeNode(nodeId))
             }
             setEditingNodeId(null)
           }}
