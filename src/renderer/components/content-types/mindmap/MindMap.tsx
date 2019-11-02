@@ -8,30 +8,31 @@ import uuid from "uuid";
 
 const Edge = ({ a, b, link }: { a: MindMapNode, b: MindMapNode, link: MindMapLink }) => {
   const d = `M${a.x} ${a.y} L${b.x} ${b.y}`
-  return <g>
-    <path d={d} stroke="#ccc" strokeWidth="3" strokeLinecap="round" />
+  return <svg
+    style={{ width, height, position: 'absolute', left: minX - buffer, top: minY - buffer }}
+    viewBox={`${minX - buffer} ${minY - buffer} ${width} ${height}`}
+  >
+    <path d={d} stroke={stroke} strokeWidth="3" strokeLinecap="round" />
     <path d={d} style={{ pointerEvents: 'auto' }} stroke="transparent" strokeWidth="9" />
-  </g>
+  </svg>
 }
 
 const Edges = ({ doc, protoEdge }: { doc: MindMapDoc, protoEdge?: { from: string, to: { x: number, y: number } } }) => {
   let protoEdgeElement
   if (protoEdge) {
     const source = doc.nodes[protoEdge.from]
-    protoEdgeElement = <path d={`M${source.x} ${source.y} L${protoEdge.to.x} ${protoEdge.to.y}`} stroke="#ccc" strokeWidth="3" strokeLinecap="round" />
+    protoEdgeElement = <Line a={source} b={protoEdge.to} stroke="#ccc" />
   }
   return <div className="MindMapEdges">
-    <svg>
-      {Object.keys(doc.edges).map(e => {
-        const [aId, bId] = idsFromEdge(e)
-        const a = doc.nodes[aId]
-        const b = doc.nodes[bId]
-        if (a && b) {
-          return <Edge key={e} a={a} b={b} link={doc.edges[e]} />
-        }
-      })}
-      {protoEdgeElement}
-    </svg>
+    {Object.keys(doc.edges).map(e => {
+      const [aId, bId] = idsFromEdge(e)
+      const a = doc.nodes[aId]
+      const b = doc.nodes[bId]
+      if (a && b) {
+        return <Edge key={e} a={a} b={b} link={doc.edges[e]} />
+      }
+    })}
+    {protoEdgeElement}
   </div>
 }
 
